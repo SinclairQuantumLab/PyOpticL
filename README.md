@@ -13,8 +13,8 @@
 <!-- <img src="https://github.com/user-attachments/assets/1dbe2986-20e2-4f4e-9b4c-00dd31a4b656" width=50%> -->
 
 ### ReadMe
-* [Library Features and Information](https://github.com/UMassIonTrappers/PyOpticL#about-pyopticl-python-optics-layout)
-* [Installation Guide](https://github.com/UMassIonTrappers/PyOpticL#getting-setup)
+* [Library Features and Information](https://github.com/SinclairQuantumLab/PyOpticL/tree/v1-legacy#about-pyopticl-python-optics-layout)
+* [Sinclair Lab Installation Guide](https://github.com/SinclairQuantumLab/PyOpticL/tree/v1-legacy#getting-setup)
 
 ### Wiki
 * [Quickstart Guide](https://github.com/UMassIonTrappers/PyOpticL/wiki#quickstart-guide)
