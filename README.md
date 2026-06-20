@@ -57,23 +57,111 @@ See our recent preprint for more details about our results using these laser sou
 
 1. **Install FreeCAD, Python, and Git**
 
-2. **Add PyOpticL as a custom addon repository in FreeCAD**  
-	Under _Edit>Preferences>Addon Manager>Custom Repositories,_ click the plus icon and enter the following information: \
-    _Repository URL:_ https://github.com/UMassIonTrappers/PyOpticL.git \
-    _Branch:_ main \
-   Press _OK_ to save settings
+2. **Add the Sinclair Lab PyOpticL fork as a custom addon repository in FreeCAD**
+   Under *Edit>Preferences>Addon Manager>Custom Repositories,* click the plus icon and enter the following information: 
+   *Repository URL:* https://github.com/SinclairQuantumLab/PyOpticL.git 
+   *Branch:* v1-legacy 
+   Press *OK* to save settings
 
-4. **Install the PyOpticL library**
-    In the Addon Manager _(Tools>Addon Manager),_ search for "PyOpticL" and click install. \
-   _Note: if you get an error related to git, try disabling it - Edit>Preferences>Addon Manager>Disable git_
-		
-6. **Check everything is setup correctly**  
-   You should now be able to re-launch FreeCAD and see the "PyOpticL" workbench in the workbench dropdown
-   <!-- <img width="250" alt="Screenshot 2023-10-27 225345" src="https://github.com/user-attachments/assets/7a43cac3-7d3b-4a3b-8e5f-189f39729251"> -->
+3. **Install the PyOpticL library**
+   In the Addon Manager *(Tools>Addon Manager),* search for "PyOpticL" and click install. 
+   *Note: if you get an error related to git, try disabling it - Edit>Preferences>Addon Manager>Disable git*
 
-7. **Check out the [wiki](https://github.com/UMassIonTrappers/PyOpticL/wiki) for guides on how to [get started](https://github.com/UMassIonTrappers/PyOpticL/wiki#quickstart-guide) and examples**
+4. **Check everything is setup correctly**
+   You should now be able to re-launch FreeCAD and see the "PyOpticL" workbench in the workbench dropdown.
 
-8. **Read the [docs](https://github.com/UMassIonTrappers/PyOpticL/tree/main/docs) library documentation**
+5. **Verify the installed repository**
+   The installed PyOpticL addon should be located in the FreeCAD user data directory.
+
+   On macOS, this is typically: 
+   `~/Library/Application Support/FreeCAD/Mod/PyOpticL`
+
+   On Windows, this may be: 
+   `%APPDATA%\FreeCAD\Mod\PyOpticL` 
+   or 
+   `%APPDATA%\FreeCAD\v1-1\Mod\PyOpticL`
+
+   To confirm that the installed addon points to the Sinclair Lab fork, run:
+
+   ```bash
+   git remote -v
+   git branch
+   git status
+   ```
+
+   The remote should point to: 
+   `https://github.com/SinclairQuantumLab/PyOpticL.git`
+
+   The active branch should be: 
+   `v1-legacy`
+
+### Updating an Existing PyOpticL Installation to the Sinclair Lab Fork
+
+If PyOpticL is already installed from the original upstream repository, you do **not** need to reinstall FreeCAD. Replace only the PyOpticL addon folder.
+
+1. **Close FreeCAD**
+
+2. **Find the existing PyOpticL addon folder**
+
+   On macOS, this is typically: 
+   `~/Library/Application Support/FreeCAD/Mod/PyOpticL`
+
+   On Windows, this may be: 
+   `%APPDATA%\FreeCAD\Mod\PyOpticL` 
+   or 
+   `%APPDATA%\FreeCAD\v1-1\Mod\PyOpticL`
+
+3. **Move the old PyOpticL folder out of the FreeCAD Mod directory**
+
+   Do not leave a renamed copy inside the `Mod` directory, because FreeCAD may still try to load it and produce an error such as: 
+   `'OpticsWorkbench' already exists.`
+
+   On macOS, for example:
+
+   ```bash
+   cd "~/Library/Application Support/FreeCAD/Mod"
+   mkdir -p ~/Desktop/FreeCAD_old_addons
+   mv PyOpticL ~/Desktop/FreeCAD_old_addons/PyOpticL_old_original
+   ```
+
+   On Windows, for example:
+
+   ```powershell
+   cd $env:APPDATA\FreeCAD\v1-1\Mod
+   mkdir $env:USERPROFILE\Desktop\FreeCAD_old_addons
+   Move-Item PyOpticL $env:USERPROFILE\Desktop\FreeCAD_old_addons\PyOpticL_old_original
+   ```
+
+4. **Clone the Sinclair Lab fork into the FreeCAD Mod directory**
+
+   On macOS:
+
+   ```bash
+   cd "~/Library/Application Support/FreeCAD/Mod"
+   git clone --branch v1-legacy https://github.com/SinclairQuantumLab/PyOpticL.git PyOpticL
+   ```
+
+   On Windows:
+
+   ```powershell
+   cd $env:APPDATA\FreeCAD\v1-1\Mod
+   git clone --branch v1-legacy https://github.com/SinclairQuantumLab/PyOpticL.git PyOpticL
+   ```
+
+5. **Restart FreeCAD**
+
+   You should now see the "PyOpticL" workbench in the workbench dropdown.
+
+6. **Update PyOpticL in the future using git**
+
+   From inside the installed PyOpticL addon folder, run:
+
+   ```bash
+   git pull
+   ```
+
+   Restart FreeCAD after pulling updates.
+
 
 ### Pre-made Layouts
 
