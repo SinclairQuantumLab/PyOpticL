@@ -1,9 +1,0 @@
-.env
-.venv
-.vscode
-*.pyc
-__pycache__
-PyOpticL/Designs/Cavity/*
-PyOpticL/Designs/Cavity
-PyOpticL/models/**/*.stl
-!PyOpticL/models/isomet-1205c/*.stl
