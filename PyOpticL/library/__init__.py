@@ -41,6 +41,9 @@ class Baseplate:
                         label="Mount Hole",
                         definition=hardware.Bolt(
                             types=["1/4_20", "M6"],
+                            # Baseplate mount holes must pass entirely through the
+                            # board as clearance bores, not stop at an intermediate
+                            # thread depth.
                             clear_depth=self.dimensions[2],
                         ),
                     ),

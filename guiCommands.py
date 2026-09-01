@@ -88,6 +88,52 @@ class Export_STLs:
         return
 
 
+def collect_exportable_objects(doc):
+    """Return all document objects that can be exported as STEP bodies."""
+    objects = []
+    for obj in doc.Objects:
+        if obj.isDerivedFrom("App::DocumentObjectGroup"):
+            continue
+
+        if hasattr(obj, "Shape") and obj.Shape is not None and not obj.Shape.isNull():
+            objects.append(obj)
+            continue
+
+        if hasattr(obj, "Mesh") and obj.Mesh is not None and obj.Mesh.Count > 0:
+            objects.append(obj)
+
+    return objects
+
+
+class Export_All_Assembly_STEP:
+
+    def GetResources(self):
+        return {
+            "Pixmap": ":/icons/Part_Export.svg",
+            "Accel": "Shift+S",
+            "MenuText": "Export Full Assembly to STEP",
+        }
+
+    def Activated(self):
+        doc = App.activeDocument()
+        if doc is None:
+            App.Console.PrintError("No active FreeCAD document.\n")
+            return
+
+        export_path = Path.home() / "Downloads" / "PyOpticL_Full_Assembly.step"
+        objects = collect_exportable_objects(doc)
+
+        if not objects:
+            App.Console.PrintError("No exportable objects found in the active document.\n")
+            return
+
+        Part.export(objects, str(export_path))
+        App.Console.PrintMessage(
+            "Full assembly STEP exported to '%s'\n" % (str(export_path))
+        )
+        return
+
+
 class Export_Cart:
 
     def GetResources(self):

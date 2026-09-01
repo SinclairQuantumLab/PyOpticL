@@ -1,7 +1,7 @@
 measurement_system = "imperial"
 minimum_thread_engagement = 8
 default_extra_drill_depth = 10
-hidden_object_groups = ["hardware"]
+hidden_object_groups = []
 enable_beam_transparency = False
 
 

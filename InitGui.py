@@ -46,6 +46,7 @@ class OpticsWorkbench(Workbench):
             "RerunMacro",
             "ToggleDrawStyle",
             "ExportSTLs",
+            "ExportAllAssemblySTEP",
             "ExportCart",
             "ReloadModules",
             "ConvertModel",
