@@ -14,6 +14,21 @@ def mirror(label: str = "Mirror", thumbscrews: bool = True) -> Component:
     )
 
 
+def cavity(
+    label: str = "Cavity Mirror",
+    ref_ratio: float = 0.99,
+    input: bool = True,
+    thumbscrews: bool = True,
+) -> Component:
+    return Component(
+        label=label,
+        definition=sinclair.cavity_mirror_M05(
+            ref_ratio=ref_ratio,
+            input=input,
+            thumbscrews=thumbscrews,
+        ),
+    )
+
 def mirror_fix(label: str = "Fixed Mirror", thumbscrews: bool = False) -> Component:
     return Component(
         label=label,

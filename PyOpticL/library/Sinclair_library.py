@@ -29,6 +29,8 @@ from PyOpticL.icons import optic_icon, thorlabs_icon
 
 from PyOpticL.layout import Component, Subcomponent
 
+from PyOpticL.library.optics import Cavity_Mirror
+
 from PyOpticL.utils import Dimension as dim
 
 from PyOpticL.utils import (
@@ -2903,6 +2905,34 @@ class circular_mirror:
     def shape(self) -> Part.Shape:
         part = _custom_cylinder(dia=self.diameter, dz=self.thickness, x=0, y=0, z=0, dir=(-1, 0, 0))
         return part
+
+class cavity_mirror_M05(Cavity_Mirror):
+    """Cavity mirror mounted in an M05."""
+
+    def __init__(
+        self,
+        drill: bool = True,
+        thickness: dim = 6,
+        diameter: dim = INCH / 2,
+        ref_ratio: float = 0.5,
+        input: bool = True,
+        thumbscrews: bool = True,
+        part_number: str = "",
+    ):
+        super().__init__(
+            diameter=diameter,
+            thickness=thickness,
+            ref_ratio=ref_ratio,
+            input=input,
+            mount_definition=mirror_mount_M05(
+                drill=drill,
+                thumbscrews=thumbscrews,
+            ),
+            part_number=part_number,
+        )
+
+        self.drill_enabled = drill
+
 
 class circular_mirror_union_optic:
     """Circular Mirror

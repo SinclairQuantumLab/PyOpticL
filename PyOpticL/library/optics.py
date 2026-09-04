@@ -272,6 +272,97 @@ class Circular_Mirror(Circular_Reflector):
         )
 
 
+class Cavity_Mirror(Circular_Mirror):
+    class _Reflection(Reflection):
+        def __init__(
+            self,
+            position,
+            rotation,
+            diameter,
+            ref_ratio,
+            input,
+        ):
+            super().__init__(
+                position=position,
+                rotation=rotation,
+                diameter=diameter,
+                ref_ratio=0,
+                refractive_index_ratio=1,
+                max_angle=180,
+            )
+
+            self.cavity_ref_ratio = ref_ratio
+            self.input = input
+
+        def _previously_interacted(self, incident_beam):
+            mirror_obj = self.parent.get_object()
+            beam_obj = incident_beam.get_object()
+
+            while beam_obj is not None:
+                if getattr(beam_obj, "EndObject", None) == mirror_obj:
+                    return True
+
+                beam_obj = getattr(beam_obj, "Parent", None)
+
+            return False
+
+        def get_output_beams(self, incident_beam):
+            if self.input:
+                beam_direction = incident_beam.get_global_direction()
+                mirror_direction = self.get_global_normal()
+
+                if np.dot(beam_direction, mirror_direction) > 0:
+                    self.type = "sampler"
+                    self.ref_ratio = 0
+                else:
+                    self.type = "mirror"
+
+            else:
+                if self._previously_interacted(incident_beam):
+                    self.type = "sampler"
+                    self.ref_ratio = 0
+                else:
+                    self.type = "sampler"
+                    self.ref_ratio = self.cavity_ref_ratio
+
+            return super().get_output_beams(incident_beam)
+
+    def __init__(
+        self,
+        diameter: dim = dim(0.5, "in"),
+        thickness: dim = dim(6, "mm"),
+        ref_ratio: float = 0.5,
+        input: bool = True,
+        mount_definition: object = None,
+        mount_offset: tuple = None,
+        part_number: str = "",
+    ):
+        super().__init__(
+            diameter=diameter,
+            thickness=thickness,
+            mount_definition=mount_definition,
+            mount_offset=mount_offset,
+            part_number=part_number,
+        )
+
+        if not 0 <= ref_ratio <= 1:
+            raise ValueError("ref_ratio must be between 0 and 1")
+
+        self.ref_ratio = ref_ratio
+        self.input = input
+
+    def interfaces(self):
+        return [
+            self._Reflection(
+                position=(0, 0, 0),
+                rotation=(0, 0, 0),
+                diameter=self.diameter,
+                ref_ratio=self.ref_ratio,
+                input=self.input,
+            )
+        ]
+
+
 class Rectangular_Mirror(Rectangular_Reflector):
     """
     A rectangular mirror component
