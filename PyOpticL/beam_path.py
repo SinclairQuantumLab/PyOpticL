@@ -448,7 +448,9 @@ class BeamSegment(Layout):
         # color and transparency based on wavelength and power
         obj.ViewObject.ShapeColor = wavelength_to_rgb(self.wavelength)
         if get_enable_beam_transparency():
-            obj.ViewObject.Transparency = int(100 * (1 - self.relative_power))
+            # Keep full-power beams see-through by default.  Lower-power
+            # branches remain progressively more transparent.
+            obj.ViewObject.Transparency = int(30 + 70 * (1 - self.relative_power))
 
         # get gaussian beam parameters
         q_param = self.get_q_parameter()

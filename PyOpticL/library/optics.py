@@ -1,6 +1,6 @@
 import numpy as np
 
-from PyOpticL.beam_path import Lens, Reflection, Waveplate
+from PyOpticL.beam_path import BeamSegment, Lens, Reflection, Waveplate
 from PyOpticL.icons import optic_icon
 from PyOpticL.layout import Component, Subcomponent
 from PyOpticL.library.adapters import Surface_Adapter
@@ -555,6 +555,177 @@ class Spherical_Lens:
             )
         )
         return part
+
+
+class micro_mirror(Spherical_Lens):
+    """A microlens-array element represented by a spherical lens.
+
+    Unlike :class:`Spherical_Lens`, this component responds when the *area* of
+    a Gaussian beam overlaps its clear aperture.  It terminates the incident
+    beam at the array plane and emits one aperture-sized focused branch per
+    overlapping element from that element's lens centre.
+
+    The solid model, mounting behaviour, and parameters are intentionally the
+    same as ``Spherical_Lens``.
+    """
+
+    class _MicroMirrorLens(Lens):
+        """Lens interface with finite-beam overlap and a focused branch."""
+
+        def get_intercept(self, incident_beam):
+            """Return the beam-axis plane intercept when its disk overlaps us.
+
+            ``Interface.get_intercept`` rejects an interface when the beam
+            centre is outside its aperture.  For a microlens array that loses
+            valid interactions from a broad, offset beam.  Here an interaction
+            exists whenever the circular Gaussian-beam footprint and circular
+            clear aperture overlap.
+            """
+            global_position = self.get_global_position()
+            global_normal = self.get_global_normal()
+            beam_position = incident_beam.get_global_position()
+            beam_direction = incident_beam.get_global_direction()
+
+            cos_incident = np.clip(
+                np.dot(beam_direction, global_normal), -1.0, 1.0
+            )
+            incident_angle = np.arccos(abs(cos_incident))
+            if incident_angle > np.deg2rad(self.max_angle):
+                return None
+
+            denominator = np.dot(global_normal, beam_direction)
+            if abs(denominator) < 1e-6:
+                return None
+
+            distance = np.dot(
+                global_normal, global_position - beam_position
+            ) / denominator
+            if distance < 1e-6:
+                return None
+
+            beam_object = incident_beam.get_object()
+            if beam_object.EndObject is not None and distance > incident_beam.distance:
+                return None
+
+            intercept = beam_position + distance * beam_direction
+            offset = intercept - global_position
+            # Numerical round-off can leave a tiny normal component.
+            offset -= np.dot(offset, global_normal) * global_normal
+            beam_radius = incident_beam.get_beam_radius(
+                incident_beam.get_q_parameter() + distance
+            )
+
+            if np.linalg.norm(offset) > self.diameter / 2 + beam_radius:
+                return None
+            return intercept
+
+        def _focused_waist(self, wavelength):
+            """Return a diffraction-limited waist that fills this aperture."""
+            aperture_radius = self.diameter / 2
+            focal_distance = abs(self.focal_length)
+            wavelength_mm = wavelength * 1e-6
+            term = wavelength_mm * focal_distance / np.pi
+            discriminant = aperture_radius**4 - 4 * term**2
+            if discriminant <= 0:
+                return aperture_radius / np.sqrt(2)
+            return np.sqrt((aperture_radius**2 - np.sqrt(discriminant)) / 2)
+
+        def _coplanar_micro_mirrors(self, incident_beam):
+            """Find overlapping micro mirrors parallel to this array element.
+
+            ``BeamPath`` selects one closest interface.  Elements on precisely
+            the same plane tie in that selection, so inspect the owning
+            component's siblings here and make one focused branch per matching
+            micro mirror.
+            """
+            owner = self.parent.get_object()
+            container = owner.Parent
+            if container is None:
+                return [self]
+
+            origin = self.get_global_position()
+            normal = self.get_global_normal()
+            mirrors = []
+            for sibling in container.Children:
+                proxy = sibling.Proxy
+                if not hasattr(proxy, "interfaces"):
+                    continue
+                for interface in proxy.interfaces():
+                    if not isinstance(interface, micro_mirror._MicroMirrorLens):
+                        continue
+                    candidate_normal = interface.get_global_normal()
+                    coplanar = abs(
+                        np.dot(interface.get_global_position() - origin, normal)
+                    ) < 1e-6
+                    parallel = abs(np.dot(candidate_normal, normal)) > 1 - 1e-6
+                    if (
+                        coplanar
+                        and parallel
+                        and interface.get_intercept(incident_beam) is not None
+                    ):
+                        mirrors.append(interface)
+
+            # A component can be placed outside the usual parent/children
+            # hierarchy; retain the selected interface in that case.
+            return mirrors or [self]
+
+        def _make_focused_beam(self, incident_beam, index):
+            """Create this element's aperture-sized focused output branch."""
+            normal = self.get_global_normal()
+            direction_sign = np.sign(
+                np.dot(incident_beam.get_global_direction(), normal)
+            )
+            if direction_sign == 0:
+                direction_sign = 1
+            focused_direction = normal * direction_sign
+            local_direction = incident_beam.get_relative_direction(focused_direction)
+            local_lens_center = incident_beam.get_relative_position(
+                self.get_global_position()
+            )
+            focused = BeamSegment(
+                index=index,
+                direction=local_direction,
+                wavelength=incident_beam.wavelength,
+                polarization=incident_beam.polarization_jones,
+                power=incident_beam.power,
+                waist_position=abs(self.focal_length),
+                waist=self._focused_waist(incident_beam.wavelength),
+            )
+            incident_beam.add(focused, origin=local_lens_center)
+            return focused
+
+        def get_output_beams(self, incident_beam):
+            intercept = self.get_intercept(incident_beam)
+            if intercept is None:
+                return []
+
+            # Each overlapping coplanar array element gets an independent
+            # focused beam, including elements the global tracer did not pick
+            # because they are at exactly the same optical distance.
+            focused_beams = []
+            mirrors = self._coplanar_micro_mirrors(incident_beam)
+            for branch, mirror in enumerate(mirrors, 1):
+                focused_beams.append(
+                    mirror._make_focused_beam(
+                        incident_beam, (incident_beam.index << 8) + branch
+                    )
+                )
+            return focused_beams
+
+    def interfaces(self):
+        return [
+            self._MicroMirrorLens(
+                position=(0, 0, 0),
+                rotation=(0, 0, 0),
+                diameter=self.diameter,
+                focal_length=self.focal_length,
+            )
+        ]
+
+
+# ``micro_mirror`` is the requested public name.  This alias follows the
+# existing library's CamelCase component convention for interactive use.
+Micro_Mirror = micro_mirror
 
 
 class Circular_Waveplate:

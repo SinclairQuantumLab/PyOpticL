@@ -2,7 +2,8 @@ measurement_system = "imperial"
 minimum_thread_engagement = 8
 default_extra_drill_depth = 10
 hidden_object_groups = []
-enable_beam_transparency = False
+# Full-power beam segments are rendered at 30% transparency by default.
+enable_beam_transparency = True
 
 
 def set_measurement_system(system: str):
