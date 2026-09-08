@@ -4,4 +4,4 @@
 *.pyc
 __pycache__
 PyOpticL/Designs/Cavity/*
-PyOpticL/Designs/Cavity
+PyOpticL/Designs/Cavity.DS_Store
