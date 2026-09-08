@@ -557,19 +557,19 @@ class Spherical_Lens:
         return part
 
 
-class micro_mirror(Spherical_Lens):
+class micro_lens(Spherical_Lens):
     """A microlens-array element represented by a spherical lens.
 
     Unlike :class:`Spherical_Lens`, this component responds when the *area* of
     a Gaussian beam overlaps its clear aperture.  It terminates the incident
-    beam at the array plane and emits one aperture-sized focused branch per
+    beam at the array plane and emits one thin-lens-transformed branch per
     overlapping element from that element's lens centre.
 
     The solid model, mounting behaviour, and parameters are intentionally the
     same as ``Spherical_Lens``.
     """
 
-    class _MicroMirrorLens(Lens):
+    class _MicroLens(Lens):
         """Lens interface with finite-beam overlap and a focused branch."""
 
         def get_intercept(self, incident_beam):
@@ -619,24 +619,13 @@ class micro_mirror(Spherical_Lens):
                 return None
             return intercept
 
-        def _focused_waist(self, wavelength):
-            """Return a diffraction-limited waist that fills this aperture."""
-            aperture_radius = self.diameter / 2
-            focal_distance = abs(self.focal_length)
-            wavelength_mm = wavelength * 1e-6
-            term = wavelength_mm * focal_distance / np.pi
-            discriminant = aperture_radius**4 - 4 * term**2
-            if discriminant <= 0:
-                return aperture_radius / np.sqrt(2)
-            return np.sqrt((aperture_radius**2 - np.sqrt(discriminant)) / 2)
-
-        def _coplanar_micro_mirrors(self, incident_beam):
-            """Find overlapping micro mirrors parallel to this array element.
+        def _coplanar_micro_lenses(self, incident_beam):
+            """Find overlapping micro lenses parallel to this array element.
 
             ``BeamPath`` selects one closest interface.  Elements on precisely
             the same plane tie in that selection, so inspect the owning
             component's siblings here and make one focused branch per matching
-            micro mirror.
+            micro lens.
             """
             owner = self.parent.get_object()
             container = owner.Parent
@@ -651,7 +640,7 @@ class micro_mirror(Spherical_Lens):
                 if not hasattr(proxy, "interfaces"):
                     continue
                 for interface in proxy.interfaces():
-                    if not isinstance(interface, micro_mirror._MicroMirrorLens):
+                    if not isinstance(interface, micro_lens._MicroLens):
                         continue
                     candidate_normal = interface.get_global_normal()
                     coplanar = abs(
@@ -670,7 +659,13 @@ class micro_mirror(Spherical_Lens):
             return mirrors or [self]
 
         def _make_focused_beam(self, incident_beam, index):
-            """Create this element's aperture-sized focused output branch."""
+            """Create an aperture-limited lens-axis output beam.
+
+            The Gaussian q parameter is transformed by the same thin-lens
+            ABCD matrix as ``Lens``.  If the incident beam overfills the
+            microlens, its radius at this plane is then clipped to the clear
+            aperture while retaining the transformed wavefront curvature.
+            """
             normal = self.get_global_normal()
             direction_sign = np.sign(
                 np.dot(incident_beam.get_global_direction(), normal)
@@ -682,14 +677,35 @@ class micro_mirror(Spherical_Lens):
             local_lens_center = incident_beam.get_relative_position(
                 self.get_global_position()
             )
+            waist_position, rayleigh_range = self.apply_abcd(incident_beam)
+            q_out = complex(-waist_position, rayleigh_range)
+
+            # The displayed/output Gaussian must not be wider than the clear
+            # aperture.  Smaller incident beams are left at their own size.
+            input_radius = incident_beam.get_beam_radius(
+                incident_beam.get_q_parameter() + incident_beam.distance
+            )
+            output_radius = min(input_radius, self.diameter / 2)
+
+            # Preserve the output phase-front curvature (the lens action),
+            # while setting the Gaussian radius at this plane to the clipped
+            # aperture radius.  For a Gaussian beam,
+            #   Re(1/q) = 1/R  and  Im(1/q) = -lambda/(pi*w**2).
+            curvature = np.real(1 / q_out)
+            wavelength_mm = incident_beam.wavelength * 1e-6
+            aperture_q = 1 / (
+                curvature - 1j * wavelength_mm / (np.pi * output_radius**2)
+            )
+            waist_position = -aperture_q.real
+            rayleigh_range = aperture_q.imag
             focused = BeamSegment(
                 index=index,
                 direction=local_direction,
                 wavelength=incident_beam.wavelength,
                 polarization=incident_beam.polarization_jones,
                 power=incident_beam.power,
-                waist_position=abs(self.focal_length),
-                waist=self._focused_waist(incident_beam.wavelength),
+                waist_position=waist_position,
+                rayleigh_range=rayleigh_range,
             )
             incident_beam.add(focused, origin=local_lens_center)
             return focused
@@ -703,7 +719,7 @@ class micro_mirror(Spherical_Lens):
             # focused beam, including elements the global tracer did not pick
             # because they are at exactly the same optical distance.
             focused_beams = []
-            mirrors = self._coplanar_micro_mirrors(incident_beam)
+            mirrors = self._coplanar_micro_lenses(incident_beam)
             for branch, mirror in enumerate(mirrors, 1):
                 focused_beams.append(
                     mirror._make_focused_beam(
@@ -714,7 +730,7 @@ class micro_mirror(Spherical_Lens):
 
     def interfaces(self):
         return [
-            self._MicroMirrorLens(
+            self._MicroLens(
                 position=(0, 0, 0),
                 rotation=(0, 0, 0),
                 diameter=self.diameter,
@@ -723,9 +739,8 @@ class micro_mirror(Spherical_Lens):
         ]
 
 
-# ``micro_mirror`` is the requested public name.  This alias follows the
-# existing library's CamelCase component convention for interactive use.
-Micro_Mirror = micro_mirror
+# Alias following the existing library's CamelCase component convention.
+Micro_Lens = micro_lens
 
 
 class Circular_Waveplate:
