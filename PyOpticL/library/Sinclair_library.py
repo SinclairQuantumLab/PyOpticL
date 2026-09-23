@@ -1877,6 +1877,27 @@ class pmot_lens_80:
         ]
 
 
+class mot_coil:
+    """Aligned MOT coil CAD geometry with no optical or drilling interactions."""
+
+    object_group = "components"
+    object_icon = ""
+    object_color = mount_color
+
+    model_source = {
+        "stl": "mot-coil.stl",
+        "rotation": (0, 0, 0),
+        "translation": (0, 0, 0),
+        "scale": 1,
+    }
+
+    mesh = LazyModel("mot-coil", directory=MODELS_DIRECTORY)
+
+    def __init__(self):
+        self.part_numbers = ["MOT Coil"]
+        self.drill_enabled = False
+
+
 class pmot_glass_cell:
     """pMOT glass cell used only as a geometric reference.
 
@@ -2006,7 +2027,8 @@ class mirror_mount_KA2T:
 
 
 class mounted_lens_AC254_040_C_ML:
-    """Thorlabs AC254-040-C-ML mounted achromatic doublet."""
+    """Thorlabs AC254-040-C-ML mounted achromatic doublet.
+    modeling is AC254-040-C-ML, but set as f=45mm for pMOT optics"""
 
     object_group = "optics"
     object_icon = optic_icon
@@ -2988,4 +3010,3 @@ class circular_mirror_union_optic:
 surface_adapter_4_40 = surface_adapter
 
 surface_adapter_lying_down = surface_adapter
-
