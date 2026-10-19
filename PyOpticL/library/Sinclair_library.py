@@ -635,7 +635,7 @@ class mirror_mount_KA05T:
         self.mount_hole_distance = mount_hole_dy
         if isinstance(Fiber_Clamp, bool):
             Fiber_Clamp = 'Standard' if Fiber_Clamp else 'None'
-        if Fiber_Clamp not in ('Standard', 'V1', 'None'):
+        if Fiber_Clamp not in ('Standard', 'Left', 'Right', 'None'):
             Fiber_Clamp = 'Standard'
         self.fiber_clamp = Fiber_Clamp
         self.part_numbers = ['KA05T']
@@ -644,7 +644,7 @@ class mirror_mount_KA05T:
         components = []
         if isinstance(self.fiber_clamp, bool):
             Fiber_Clamp = 'Standard' if self.fiber_clamp else 'None'
-        if self.fiber_clamp not in ('Standard', 'V1', 'None'):
+        if self.fiber_clamp not in ('Standard', 'Left', 'Right', 'None'):
             Fiber_Clamp = 'Standard'
         if self.thumbscrews:
             components.append(
@@ -670,8 +670,10 @@ class mirror_mount_KA05T:
         if fc == 'Standard':
             for i in [-1, 1]:
                 part = part.fuse(_custom_cylinder(dia=bolt_8_32['tap_dia'], dz=DRILL_DEPTH, x=-2.5 * INCH, y=18 * i, z=0))
-        elif fc == 'V1':
+        elif fc == 'Left':
             part = part.fuse(_custom_cylinder(dia=bolt_8_32['tap_dia'], dz=DRILL_DEPTH, x=-2.5 * INCH, y=18, z=0))
+        elif fc == 'Right':
+            part = part.fuse(_custom_cylinder(dia=bolt_8_32['tap_dia'], dz=DRILL_DEPTH, x=-2.5 * INCH, y=-18, z=0))
         part = part.fuse(_custom_cylinder(dia=bolt_8_32['tap_dia'], dz=DRILL_DEPTH, x=-0.32264471 * INCH, y=0, z=-0.5 * INCH, dir=(0, 0, -1)))
         drill_part = part
         return part
@@ -700,7 +702,7 @@ class fiberport_mount_KA05T:
         self.drill_enabled = drill
         if isinstance(Fiber_Clamp, bool):
             Fiber_Clamp = 'Standard' if Fiber_Clamp else 'None'
-        if Fiber_Clamp not in ('Standard', 'V1', 'None'):
+        if Fiber_Clamp not in ('Standard', 'Left', 'Right', 'None'):
             Fiber_Clamp = 'Standard'
         self.fiber_clamp = Fiber_Clamp
 
@@ -710,7 +712,7 @@ class fiberport_mount_KA05T:
         adapter_args = dict(self.adapter_args)
         if isinstance(self.fiber_clamp, bool):
             Fiber_Clamp = 'Standard' if self.fiber_clamp else 'None'
-        if self.fiber_clamp not in ('Standard', 'V1', 'None'):
+        if self.fiber_clamp not in ('Standard', 'Left', 'Right', 'None'):
             Fiber_Clamp = 'Standard'
         mount_kw = dict(mount_args)
         mount_kw['Fiber_Clamp'] = self.fiber_clamp
@@ -765,7 +767,7 @@ class fiberport_mount_KA05T:
                 )
             )
         else:
-            if self.fiber_clamp == 'V1':
+            if self.fiber_clamp == 'Left':
                 components.append(
                     Subcomponent(
                         component=Component(label='Fiber Clamp 3 Top1', definition=fiber_clamp_3_top1()),
@@ -778,6 +780,21 @@ class fiberport_mount_KA05T:
                         component=Component(label='Fiber Clamp 3 Bottom1', definition=fiber_clamp_3_bottom1()),
                         position=(-2.5 * INCH, 0, -12.7),
                         rotation=(0, 0, -90),
+                    )
+                )
+            elif self.fiber_clamp == 'Right':
+                components.append(
+                    Subcomponent(
+                        component=Component(label='Fiber Clamp 3 Top1', definition=fiber_clamp_3_top1()),
+                        position=(-2.5 * INCH, 0, -12.7),
+                        rotation=(0, 0, 90),
+                    )
+                )
+                components.append(
+                    Subcomponent(
+                        component=Component(label='Fiber Clamp 3 Bottom1', definition=fiber_clamp_3_bottom1()),
+                        position=(-2.5 * INCH, 0, -12.7),
+                        rotation=(0, 0, 90),
                     )
                 )
         return components
